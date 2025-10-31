@@ -190,11 +190,20 @@
       const text = noteText.value.trim();
       if (!text && !selectedImage) return alert('Masukkan teks atau gambar!');
 
+      const createdAt = new Date().toLocaleString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
       const note = {
         id: Date.now(),
         text: text,
         image: selectedImage ? URL.createObjectURL(selectedImage) : null,
-        createdAt: new Date().toLocaleString('id-ID')
+        createdAt: createdAt
       };
 
       notes.push(note);
@@ -210,7 +219,12 @@
     }
 
     function downloadAsTXT(note) {
-      let content = `${note.text || ''}\n\nDibuat: ${note.createdAt}`;
+      let content = '';
+      if (note.text) {
+        content += note.text + '\n\n';
+      }
+      content += `Dibuat: ${note.createdAt}`;
+      
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -226,25 +240,66 @@
       const doc = new jsPDF();
       let y = 20;
 
-      doc.setFontSize(12);
-      if (note.text) {
-        const textLines = doc.splitTextToSize(note.text, 180);
-        doc.text(textLines, 15, y);
-        y += (textLines.length * 7) + 10;
-      }
+      // Add title
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Catatan', 15, y);
+      y += 15;
 
+      // Add creation date
       doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
       doc.text(`Dibuat: ${note.createdAt}`, 15, y);
       y += 10;
 
+      // Add horizontal line
+      doc.setDrawColor(200, 200, 200);
+      doc.line(15, y, 195, y);
+      y += 15;
+
+      // Add text content
+      if (note.text) {
+        doc.setFontSize(12);
+        const textLines = doc.splitTextToSize(note.text, 170);
+        doc.text(textLines, 15, y);
+        y += (textLines.length * 7);
+      }
+
+      // Add image if exists
       if (note.image) {
         const img = new Image();
         img.src = note.image;
-        img.onload = () => {
-          const imgWidth = 80;
-          const imgHeight = (img.height * imgWidth) / img.width;
-          if (y + imgHeight > 280) doc.addPage();
-          doc.addImage(img, 'JPEG', 15, y, imgWidth, imgHeight);
+        
+        img.onload = function() {
+          const maxWidth = 170;
+          const maxHeight = 100;
+          let imgWidth = img.width;
+          let imgHeight = img.height;
+          
+          // Scale image to fit
+          if (imgWidth > maxWidth) {
+            const ratio = maxWidth / imgWidth;
+            imgWidth = maxWidth;
+            imgHeight = imgHeight * ratio;
+          }
+          if (imgHeight > maxHeight) {
+            const ratio = maxHeight / imgHeight;
+            imgHeight = maxHeight;
+            imgWidth = imgWidth * ratio;
+          }
+          
+          // Check if image fits on current page
+          if (y + imgHeight > 280) {
+            doc.addPage();
+            y = 20;
+          }
+          
+          doc.addImage(img, 'JPEG', 15, y + 10, imgWidth, imgHeight);
+          doc.save(`catatan_${note.id}.pdf`);
+        };
+        
+        img.onerror = function() {
+          // If image fails to load, just save the PDF with text
           doc.save(`catatan_${note.id}.pdf`);
         };
       } else {
@@ -257,17 +312,30 @@
       notes.forEach(note => {
         const div = document.createElement('div');
         div.className = 'note';
+        
+        // Create download functions that capture the current note
+        const downloadTXT = () => downloadAsTXT(note);
+        const downloadPDF = () => downloadAsPDF(note);
+        const deleteBtn = () => deleteNote(note.id);
+        
         div.innerHTML = `
           ${note.text ? `<p>${note.text}</p>` : ''}
           ${note.image ? `<img src="${note.image}" alt="Gambar catatan" />` : ''}
           <small>Dibuat: ${note.createdAt}</small>
           <div class="note-actions">
-            <button onclick="downloadAsTXT(${note.id})">Unduh TXT</button>
-            <button onclick="downloadAsPDF(${note.id})">Unduh PDF</button>
-            <button onclick="deleteNote(${note.id})" style="background:#f44336;color:white;">Hapus</button>
+            <button class="download-txt-btn">Unduh TXT</button>
+            <button class="download-pdf-btn">Unduh PDF</button>
+            <button class="delete-btn" style="background:#f44336;color:white;">Hapus</button>
           </div>
         `;
+        
         notesContainer.appendChild(div);
+        
+        // Add event listeners to the buttons
+        const buttons = div.querySelectorAll('button');
+        buttons[0].addEventListener('click', downloadTXT);
+        buttons[1].addEventListener('click', downloadPDF);
+        buttons[2].addEventListener('click', deleteBtn);
       });
     }
 
