@@ -3,88 +3,666 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Aplikasi Catatan</title>
+  <title>Note - Catat dan Lupakan</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f5f5f5;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h1 { text-align: center; }
-    .input-area {
-      margin-bottom: 20px;
-    }
-    textarea {
-      width: 100%;
-      height: 100px;
-      margin-bottom: 10px;
-      padding: 10px;
+    * {
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
     }
-    .drop-area {
-      border: 2px dashed #ccc;
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --light: #f8fafc;
+      --dark: #1e293b;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-600: #475569;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      color: var(--dark);
+      min-height: 100vh;
       padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
       text-align: center;
-      margin-bottom: 15px;
+      margin-bottom: 30px;
+      padding: 20px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .logo i {
+      font-size: 2.5rem;
+      color: var(--primary);
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--gray-600);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Input Section */
+    .input-section {
+      background: white;
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow-lg);
+      height: fit-content;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--dark);
+      font-size: 0.95rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 160px;
+      padding: 16px;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-family: inherit;
+      resize: vertical;
+      transition: var(--transition);
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .drop-area {
+      border: 2px dashed var(--gray-300);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
       cursor: pointer;
+      transition: var(--transition);
+      background: var(--gray-100);
+      margin-bottom: 20px;
       position: relative;
     }
-    .preview {
-      max-width: 200px;
-      margin-top: 10px;
+
+    .drop-area:hover, .drop-area.drag-over {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.05);
     }
-    button {
-      margin-right: 10px;
-      padding: 8px 15px;
+
+    .drop-area i {
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .drop-area p {
+      margin: 8px 0;
+      color: var(--gray-600);
+    }
+
+    .preview-container {
+      text-align: center;
+      margin: 16px 0;
+      position: relative;
+    }
+
+    .preview-img {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: none;
+    }
+
+    .remove-image-btn {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      display: none;
+      font-size: 14px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Notes List */
+    .notes-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .notes-count {
+      background: var(--primary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .note-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      border-left: 4px solid var(--primary);
       cursor: pointer;
     }
-    .note {
-      border: 1px solid #ddd;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 8px;
-      background: #fafafa;
+
+    .note-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
     }
-    .note img {
+
+    .note-content {
+      margin-bottom: 16px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .note-image {
       max-width: 100%;
-      height: auto;
+      max-height: 150px;
+      border-radius: 8px;
+      margin: 12px 0;
+      box-shadow: var(--shadow-sm);
+      display: none;
     }
+
+    .note-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--gray-600);
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     .note-actions {
-      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
-    .paste-instructions {
-      font-size: 12px;
-      color: #666;
-      margin-top: 5px;
+
+    .note-card:hover .note-actions {
+      opacity: 1;
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-txt {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .btn-pdf {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-delete {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-edit {
+      background: var(--warning);
+      color: white;
+    }
+
+    .action-btn:hover {
+      opacity: 0.9;
+      transform: scale(1.05);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray-600);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      color: var(--gray-300);
+    }
+
+    .empty-state h3 {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+      color: var(--dark);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+      padding: 20px;
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .feature-item {
+      text-align: center;
+      padding: 16px;
+    }
+
+    .feature-item i {
+      font-size: 1.5rem;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .feature-item h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .feature-item p {
+      font-size: 0.85rem;
+      color: var(--gray-600);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: var(--gray-600);
+      font-size: 0.9rem;
+    }
+
+    /* Toast notifications */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: var(--radius);
+      color: white;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    .toast-success {
+      background: var(--secondary);
+    }
+
+    .toast-error {
+      background: var(--danger);
+    }
+
+    /* Modal for viewing full note */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: var(--radius);
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--gray-600);
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-note-content {
+      margin-bottom: 20px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .modal-note-image {
+      max-width: 100%;
+      max-height: 400px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    .modal-note-meta {
+      color: var(--gray-600);
+      font-size: 0.9rem;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .modal-actions {
+      padding: 20px;
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Edit mode styles */
+    .edit-mode {
+      border-left-color: var(--warning) !important;
+      background: #fffbeb;
+    }
+
+    .edit-mode .note-actions {
+      opacity: 1 !important;
+    }
+
+    .save-cancel-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .save-btn {
+      background: var(--secondary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .cancel-btn {
+      background: var(--gray-300);
+      color: var(--dark);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📝 Aplikasi Catatan</h1>
-
-    <div class="input-area">
-      <textarea id="noteText" placeholder="Tulis catatan Anda di sini..."></textarea>
-      <div class="drop-area" id="dropArea">
-        Klik atau tarik gambar ke sini<br>
-        <span class="paste-instructions">Atau paste screenshot dengan Ctrl+V / Cmd+V</span>
+    <header>
+      <div class="logo">
+        <i class="fas fa-sticky-note"></i>
+        <h1>Note</h1>
       </div>
-      <img id="imagePreview" class="preview" style="display:none;" />
-      <input type="file" id="fileInput" accept="image/*" style="display:none;" />
-      <button onclick="addNote()">Tambah Catatan</button>
+      <p class="subtitle">catat dan lupakan</p>
+    </header>
+
+    <div class="main-content">
+      <div class="input-section">
+        <div class="input-group">
+          <label for="noteText"><i class="fas fa-edit"></i> Isi Catatan</label>
+          <textarea id="noteText" placeholder="Tulis catatan Anda di sini..."></textarea>
+        </div>
+
+        <div class="input-group">
+          <label><i class="fas fa-image"></i> Lampirkan Gambar</label>
+          <div class="drop-area" id="dropArea">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p><strong>Drag & drop</strong> gambar di sini</p>
+            <p>atau</p>
+            <p><strong>Klik untuk memilih file</strong> atau <strong>Ctrl+V</strong> untuk paste screenshot</p>
+            <p class="paste-instructions">Format: JPG, PNG, GIF (Max 5MB)</p>
+          </div>
+          <div class="preview-container">
+            <img id="imagePreview" class="preview-img" alt="Preview gambar">
+            <button id="removeImageBtn" class="remove-image-btn" onclick="removeImage()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="addNote()">
+            <i class="fas fa-plus"></i> Tambah Catatan
+          </button>
+          <button class="btn btn-secondary" onclick="clearInputs()">
+            <i class="fas fa-trash"></i> Bersihkan
+          </button>
+        </div>
+      </div>
+
+      <div class="notes-section">
+        <div class="section-header">
+          <h2 class="section-title">Catatan Saya</h2>
+          <div class="notes-count" id="notesCount">0 catatan</div>
+        </div>
+        <div id="notesContainer"></div>
+      </div>
     </div>
 
-    <div id="notesContainer"></div>
+    <div class="features-grid">
+      <div class="feature-item">
+        <i class="fas fa-save"></i>
+        <h4>Simpan Otomatis</h4>
+        <p>Data tersimpan saat Anda keluar</p>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-file-pdf"></i>
+        <h4>Ekspor ke PDF</h4>
+        <p>Unduh catatan sebagai dokumen PDF</p>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-file-alt"></i>
+        <h4>Ekspor ke TXT</h4>
+        <p>Unduh catatan sebagai file teks</p>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-images"></i>
+        <h4>Dukungan Gambar</h4>
+        <p>Tambahkan screenshot atau foto</p>
+      </div>
+    </div>
+
+    <footer>
+      <p>Note &copy; 2024 - Catatan Anda aman disimpan di browser ini</p>
+    </footer>
   </div>
+
+  <!-- Modal for viewing full note -->
+  <div class="modal" id="viewModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Detail Catatan</h2>
+        <button class="close-modal" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- Content will be populated by JavaScript -->
+      </div>
+      <div class="modal-actions" id="modalActions">
+        <!-- Actions will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
 
   <script>
     // Load jsPDF
@@ -93,11 +671,27 @@
     // DOM Elements
     const noteText = document.getElementById('noteText');
     const dropArea = document.getElementById('dropArea');
-    const fileInput = document.getElementById('fileInput');
     const imagePreview = document.getElementById('imagePreview');
+    const removeImageBtn = document.getElementById('removeImageBtn');
     const notesContainer = document.getElementById('notesContainer');
+    const notesCount = document.getElementById('notesCount');
+    const toast = document.getElementById('toast');
+    const viewModal = document.getElementById('viewModal');
+    const modalBody = document.getElementById('modalBody');
+    const modalActions = document.getElementById('modalActions');
 
     let selectedImage = null;
+    let editingNoteId = null;
+    let currentViewNote = null;
+
+    // Toast notification function
+    function showToast(message, type = 'success') {
+      toast.textContent = message;
+      toast.className = `toast toast-${type} show`;
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
 
     // Handle paste event for screenshots
     document.addEventListener('paste', function(e) {
@@ -107,10 +701,12 @@
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const blob = items[i].getAsFile();
-          if (blob) {
+          if (blob && blob.size <= 5 * 1024 * 1024) { // 5MB limit
             handlePastedImage(blob);
             e.preventDefault();
             break;
+          } else if (blob) {
+            showToast('Ukuran gambar terlalu besar! Maksimal 5MB', 'error');
           }
         }
       }
@@ -122,6 +718,7 @@
       reader.onload = function(e) {
         imagePreview.src = e.target.result;
         imagePreview.style.display = 'block';
+        removeImageBtn.style.display = 'block';
       };
       reader.readAsDataURL(blob);
     }
@@ -137,46 +734,66 @@
     }
 
     ['dragenter', 'dragover'].forEach(eventName => {
-      dropArea.addEventListener(eventName, highlight, false);
+      dropArea.addEventListener(eventName, () => {
+        dropArea.classList.add('drag-over');
+      }, false);
     });
 
     ['dragleave', 'drop'].forEach(eventName => {
-      dropArea.addEventListener(eventName, unhighlight, false);
+      dropArea.addEventListener(eventName, () => {
+        dropArea.classList.remove('drag-over');
+      }, false);
     });
 
-    function highlight() {
-      dropArea.style.borderColor = '#666';
-    }
-
-    function unhighlight() {
-      dropArea.style.borderColor = '#ccc';
-    }
-
     dropArea.addEventListener('drop', handleDrop, false);
-    dropArea.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', handleFileSelect, false);
+    dropArea.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file && file.size <= 5 * 1024 * 1024) {
+          handleFiles([file]);
+        } else if (file) {
+          showToast('Ukuran gambar terlalu besar! Maksimal 5MB', 'error');
+        }
+      };
+      input.click();
+    });
 
     function handleDrop(e) {
       const dt = e.dataTransfer;
       const files = dt.files;
-      if (files.length) handleFiles(files);
-    }
-
-    function handleFileSelect(e) {
-      const files = e.target.files;
-      if (files.length) handleFiles(files);
+      if (files.length) {
+        const file = files[0];
+        if (file.size <= 5 * 1024 * 1024) {
+          handleFiles(files);
+        } else {
+          showToast('Ukuran gambar terlalu besar! Maksimal 5MB', 'error');
+        }
+      }
     }
 
     function handleFiles(files) {
       const file = files[0];
-      if (!file.type.match('image.*')) return;
+      if (!file.type.match('image.*')) {
+        showToast('Format file tidak didukung! Gunakan JPG, PNG, atau GIF', 'error');
+        return;
+      }
       selectedImage = file;
       const reader = new FileReader();
       reader.onload = function(e) {
         imagePreview.src = e.target.result;
         imagePreview.style.display = 'block';
+        removeImageBtn.style.display = 'block';
       };
       reader.readAsDataURL(file);
+    }
+
+    function removeImage() {
+      selectedImage = null;
+      imagePreview.style.display = 'none';
+      removeImageBtn.style.display = 'none';
     }
 
     // Load notes from localStorage on start
@@ -184,41 +801,186 @@
 
     function saveNotes() {
       localStorage.setItem('notes', JSON.stringify(notes));
+      updateNotesCount();
+    }
+
+    function updateNotesCount() {
+      notesCount.textContent = `${notes.length} ${notes.length === 1 ? 'catatan' : 'catatan'}`;
     }
 
     function addNote() {
       const text = noteText.value.trim();
-      if (!text && !selectedImage) return alert('Masukkan teks atau gambar!');
+      if (!text && !selectedImage) {
+        showToast('Masukkan teks atau gambar terlebih dahulu!', 'error');
+        return;
+      }
 
       const createdAt = new Date().toLocaleString('id-ID', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
+        minute: '2-digit'
       });
 
       const note = {
         id: Date.now(),
         text: text,
         image: selectedImage ? URL.createObjectURL(selectedImage) : null,
-        createdAt: createdAt
+        createdAt: createdAt,
+        originalImage: selectedImage // Keep reference to original file
       };
 
       notes.push(note);
       saveNotes();
       renderNotes();
       clearInputs();
+      showToast('Catatan berhasil ditambahkan!');
     }
 
     function deleteNote(id) {
-      notes = notes.filter(note => note.id !== id);
-      saveNotes();
-      renderNotes();
+      if (confirm('Apakah Anda yakin ingin menghapus catatan ini?')) {
+        notes = notes.filter(note => note.id !== id);
+        saveNotes();
+        renderNotes();
+        showToast('Catatan berhasil dihapus!');
+      }
     }
 
-    function downloadAsTXT(note) {
+    function editNote(id) {
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
+
+      editingNoteId = id;
+      noteText.value = note.text;
+      selectedImage = note.originalImage;
+      
+      if (note.image) {
+        imagePreview.src = note.image;
+        imagePreview.style.display = 'block';
+        removeImageBtn.style.display = 'block';
+      } else {
+        imagePreview.style.display = 'none';
+        removeImageBtn.style.display = 'none';
+      }
+      
+      // Scroll to top to show the form
+      document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
+      
+      // Change button text temporarily
+      const addButton = document.querySelector('.btn-primary');
+      addButton.innerHTML = '<i class="fas fa-save"></i> Simpan Perubahan';
+      addButton.onclick = saveEditedNote;
+      
+      showToast('Mode edit aktif. Ubah catatan lalu klik "Simpan Perubahan"');
+    }
+
+    function saveEditedNote() {
+      const text = noteText.value.trim();
+      if (!text && !selectedImage) {
+        showToast('Masukkan teks atau gambar terlebih dahulu!', 'error');
+        return;
+      }
+
+      const noteIndex = notes.findIndex(n => n.id === editingNoteId);
+      if (noteIndex === -1) return;
+
+      const updatedAt = new Date().toLocaleString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      notes[noteIndex] = {
+        ...notes[noteIndex],
+        text: text,
+        image: selectedImage ? URL.createObjectURL(selectedImage) : null,
+        originalImage: selectedImage,
+        createdAt: `${notes[noteIndex].createdAt} (diedit: ${updatedAt})`
+      };
+
+      editingNoteId = null;
+      saveNotes();
+      renderNotes();
+      clearInputs();
+      
+      // Restore add button
+      const addButton = document.querySelector('.btn-primary');
+      addButton.innerHTML = '<i class="fas fa-plus"></i> Tambah Catatan';
+      addButton.onclick = addNote;
+      
+      showToast('Catatan berhasil diperbarui!');
+    }
+
+    function cancelEdit() {
+      editingNoteId = null;
+      clearInputs();
+      
+      // Restore add button
+      const addButton = document.querySelector('.btn-primary');
+      addButton.innerHTML = '<i class="fas fa-plus"></i> Tambah Catatan';
+      addButton.onclick = addNote;
+      
+      showToast('Edit dibatalkan');
+    }
+
+    function viewNote(note) {
+      currentViewNote = note;
+      modalBody.innerHTML = `
+        <div class="modal-note-content">${note.text || ''}</div>
+        ${note.image ? `<img src="${note.image}" alt="Gambar catatan" class="modal-note-image">` : ''}
+        <div class="modal-note-meta">
+          <p><strong>Dibuat:</strong> ${note.createdAt}</p>
+          <p><strong>ID:</strong> ${note.id}</p>
+        </div>
+      `;
+      
+      modalActions.innerHTML = `
+        <button class="action-btn btn-edit" onclick="editNoteFromModal(${note.id})">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+        <button class="action-btn btn-txt" onclick="downloadAsTXT(${note.id})">
+          <i class="fas fa-file-alt"></i> TXT
+        </button>
+        <button class="action-btn btn-pdf" onclick="downloadAsPDF(${note.id})">
+          <i class="fas fa-file-pdf"></i> PDF
+        </button>
+        <button class="action-btn btn-delete" onclick="deleteNoteFromModal(${note.id})">
+          <i class="fas fa-trash"></i> Hapus
+        </button>
+      `;
+      
+      viewModal.style.display = 'flex';
+    }
+
+    function editNoteFromModal(id) {
+      closeModal();
+      editNote(id);
+    }
+
+    function deleteNoteFromModal(id) {
+      closeModal();
+      deleteNote(id);
+    }
+
+    function closeModal() {
+      viewModal.style.display = 'none';
+      currentViewNote = null;
+    }
+
+    // Close modal when clicking outside
+    viewModal.addEventListener('click', (e) => {
+      if (e.target === viewModal) {
+        closeModal();
+      }
+    });
+
+    function downloadAsTXT(noteId) {
+      const note = notes.find(n => n.id === noteId);
+      if (!note) return;
+      
       let content = '';
       if (note.text) {
         content += note.text + '\n\n';
@@ -229,28 +991,38 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `catatan_${note.id}.txt`;
+      a.download = `note_catatan_${note.id}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      showToast('File TXT berhasil diunduh!');
     }
 
-    function downloadAsPDF(note) {
+    function downloadAsPDF(noteId) {
+      const note = notes.find(n => n.id === noteId);
+      if (!note) return;
+      
       const doc = new jsPDF();
       let y = 20;
 
       // Add title
-      doc.setFontSize(16);
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text('Catatan', 15, y);
+      doc.setTextColor(99, 102, 241);
+      doc.text('Note', 15, y);
+      y += 12;
+
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Catatan Pribadi', 15, y);
       y += 15;
 
       // Add creation date
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
       doc.text(`Dibuat: ${note.createdAt}`, 15, y);
-      y += 10;
+      y += 12;
 
       // Add horizontal line
       doc.setDrawColor(200, 200, 200);
@@ -260,9 +1032,10 @@
       // Add text content
       if (note.text) {
         doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
         const textLines = doc.splitTextToSize(note.text, 170);
         doc.text(textLines, 15, y);
-        y += (textLines.length * 7);
+        y += (textLines.length * 7) + 15;
       }
 
       // Add image if exists
@@ -272,7 +1045,7 @@
         
         img.onload = function() {
           const maxWidth = 170;
-          const maxHeight = 100;
+          const maxHeight = 120;
           let imgWidth = img.width;
           let imgHeight = img.height;
           
@@ -294,48 +1067,112 @@
             y = 20;
           }
           
-          doc.addImage(img, 'JPEG', 15, y + 10, imgWidth, imgHeight);
-          doc.save(`catatan_${note.id}.pdf`);
+          doc.addImage(img, 'JPEG', 15, y, imgWidth, imgHeight);
+          y += imgHeight + 15;
+          
+          // Add footer
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text('Dibuat dengan Note', 15, 285);
+          
+          doc.save(`note_catatan_${note.id}.pdf`);
+          showToast('File PDF berhasil diunduh!');
         };
         
         img.onerror = function() {
           // If image fails to load, just save the PDF with text
-          doc.save(`catatan_${note.id}.pdf`);
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text('Dibuat dengan Note', 15, 285);
+          doc.save(`note_catatan_${note.id}.pdf`);
+          showToast('File PDF berhasil diunduh!');
         };
       } else {
-        doc.save(`catatan_${note.id}.pdf`);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Dibuat dengan Note', 15, 285);
+        doc.save(`note_catatan_${note.id}.pdf`);
+        showToast('File PDF berhasil diunduh!');
       }
     }
 
     function renderNotes() {
       notesContainer.innerHTML = '';
-      notes.forEach(note => {
-        const div = document.createElement('div');
-        div.className = 'note';
-        
-        // Create download functions that capture the current note
-        const downloadTXT = () => downloadAsTXT(note);
-        const downloadPDF = () => downloadAsPDF(note);
-        const deleteBtn = () => deleteNote(note.id);
-        
-        div.innerHTML = `
-          ${note.text ? `<p>${note.text}</p>` : ''}
-          ${note.image ? `<img src="${note.image}" alt="Gambar catatan" />` : ''}
-          <small>Dibuat: ${note.createdAt}</small>
-          <div class="note-actions">
-            <button class="download-txt-btn">Unduh TXT</button>
-            <button class="download-pdf-btn">Unduh PDF</button>
-            <button class="delete-btn" style="background:#f44336;color:white;">Hapus</button>
+      updateNotesCount();
+      
+      if (notes.length === 0) {
+        notesContainer.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h3>Belum ada catatan</h3>
+            <p>Buat catatan pertama Anda menggunakan form di sebelah kiri!</p>
           </div>
         `;
+        return;
+      }
+
+      notes.slice().reverse().forEach(note => {
+        const div = document.createElement('div');
+        div.className = 'note-card';
+        if (editingNoteId === note.id) {
+          div.classList.add('edit-mode');
+        }
+        
+        // Show image in preview if exists
+        if (note.image) {
+          div.querySelector('.note-image')?.style.setProperty('display', 'block');
+        }
+        
+        div.innerHTML = `
+          ${note.text ? `<div class="note-content">${note.text.length > 100 ? note.text.substring(0, 100) + '...' : note.text}</div>` : ''}
+          ${note.image ? `<img src="${note.image}" alt="Gambar catatan" class="note-image">` : ''}
+          <div class="note-meta">
+            <span><i class="fas fa-clock"></i> ${note.createdAt.split(' ')[0]}</span>
+            <span><i class="fas fa-hashtag"></i> ID: ${note.id.toString().slice(-4)}</span>
+          </div>
+          <div class="note-actions">
+            <button class="action-btn btn-edit" data-id="${note.id}">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="action-btn btn-txt" data-id="${note.id}">
+              <i class="fas fa-file-alt"></i> TXT
+            </button>
+            <button class="action-btn btn-pdf" data-id="${note.id}">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="action-btn btn-delete" data-id="${note.id}">
+              <i class="fas fa-trash"></i> Hapus
+            </button>
+          </div>
+          ${editingNoteId === note.id ? `
+            <div class="save-cancel-group">
+              <button class="save-btn" onclick="saveEditedNote()">Simpan Perubahan</button>
+              <button class="cancel-btn" onclick="cancelEdit()">Batal</button>
+            </div>
+          ` : ''}
+        `;
+        
+        // Make the entire card clickable to view full note
+        div.addEventListener('click', (e) => {
+          if (!e.target.closest('.action-btn') && editingNoteId !== note.id) {
+            viewNote(note);
+          }
+        });
         
         notesContainer.appendChild(div);
         
-        // Add event listeners to the buttons
-        const buttons = div.querySelectorAll('button');
-        buttons[0].addEventListener('click', downloadTXT);
-        buttons[1].addEventListener('click', downloadPDF);
-        buttons[2].addEventListener('click', deleteBtn);
+        // Add event listeners for action buttons
+        if (editingNoteId !== note.id) {
+          const editBtn = div.querySelector('.btn-edit');
+          const txtBtn = div.querySelector('.btn-txt');
+          const pdfBtn = div.querySelector('.btn-pdf');
+          const deleteBtn = div.querySelector('.btn-delete');
+          
+          if (editBtn) editBtn.addEventListener('click', (e) => { e.stopPropagation(); editNote(note.id); });
+          if (txtBtn) txtBtn.addEventListener('click', (e) => { e.stopPropagation(); downloadAsTXT(note.id); });
+          if (pdfBtn) pdfBtn.addEventListener('click', (e) => { e.stopPropagation(); downloadAsPDF(note.id); });
+          if (deleteBtn) deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteNote(note.id); });
+        }
       });
     }
 
@@ -343,7 +1180,11 @@
       noteText.value = '';
       selectedImage = null;
       imagePreview.style.display = 'none';
-      fileInput.value = '';
+      removeImageBtn.style.display = 'none';
+      
+      if (editingNoteId) {
+        cancelEdit();
+      }
     }
 
     // Auto-save on page unload
