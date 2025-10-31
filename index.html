@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Note - Catat dan Lupakan</title>
+  <!-- Perbaikan: Hapus spasi ekstra di akhir URL -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -176,7 +177,7 @@
       max-height: 200px;
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      display: none;
+      display: none; /* Akan ditampilkan saat ada gambar */
     }
 
     .remove-image-btn {
@@ -190,7 +191,7 @@
       width: 28px;
       height: 28px;
       cursor: pointer;
-      display: none;
+      display: none; /* Akan ditampilkan saat ada gambar */
       font-size: 14px;
     }
 
@@ -300,7 +301,7 @@
       border-radius: 8px;
       margin: 12px 0;
       box-shadow: var(--shadow-sm);
-      display: none;
+      display: none; /* Akan ditampilkan saat ada gambar */
     }
 
     .note-meta {
@@ -1118,14 +1119,9 @@
           div.classList.add('edit-mode');
         }
         
-        // Show image in preview if exists
-        if (note.image) {
-          div.querySelector('.note-image')?.style.setProperty('display', 'block');
-        }
-        
         div.innerHTML = `
           ${note.text ? `<div class="note-content">${note.text.length > 100 ? note.text.substring(0, 100) + '...' : note.text}</div>` : ''}
-          ${note.image ? `<img src="${note.image}" alt="Gambar catatan" class="note-image">` : ''}
+          ${note.image ? `<img src="${note.image}" alt="Gambar catatan" class="note-image" style="display: block;">` : ''}
           <div class="note-meta">
             <span><i class="fas fa-clock"></i> ${note.createdAt.split(' ')[0]}</span>
             <span><i class="fas fa-hashtag"></i> ID: ${note.id.toString().slice(-4)}</span>
