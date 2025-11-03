@@ -1,12 +1,32 @@
-<!DOCTYPE html>
+
+                        <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body {
+                  background-color: white; /* Ensure the iframe has a white background */
+                }
+    
+                
+              </style>
+                        </head>
+                        <body>
+                            <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Note - Catat dan Lupakan</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    /* ... (same CSS as before) ... */
     * {
       margin: 0;
       padding: 0;
@@ -142,27 +162,30 @@
       transition: color 0.3s ease;
     }
 
-    textarea {
+    textarea, input {
       width: 100%;
-      min-height: 160px;
       padding: 16px;
       border: 2px solid var(--gray-200);
       border-radius: var(--radius);
       font-size: 1rem;
       font-family: inherit;
-      resize: vertical;
       transition: var(--transition);
       background: white;
       color: var(--dark);
     }
 
-    .dark-mode textarea {
+    .dark-mode textarea, .dark-mode input {
       background: var(--gray-300);
       color: var(--light);
       border-color: var(--gray-300);
     }
 
-    textarea:focus {
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+
+    textarea:focus, input:focus {
       outline: none;
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
@@ -517,7 +540,7 @@
       background: var(--danger);
     }
 
-    /* Modal for viewing full note */
+    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -535,9 +558,8 @@
       background: white;
       border-radius: var(--radius);
       width: 90%;
-      max-width: 800px;
-      max-height: 90vh;
-      overflow-y: auto;
+      max-width: 500px;
+      padding: 30px;
       box-shadow: var(--shadow-lg);
       position: relative;
       transition: background 0.3s ease;
@@ -548,16 +570,10 @@
     }
 
     .modal-header {
-      padding: 20px;
-      border-bottom: 1px solid var(--gray-200);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: border-color 0.3s ease;
-    }
-
-    .dark-mode .modal-header {
-      border-color: var(--gray-300);
+      margin-bottom: 20px;
     }
 
     .modal-title {
@@ -580,93 +596,43 @@
       color: var(--gray-300);
     }
 
-    .modal-body {
-      padding: 20px;
-    }
-
-    .modal-note-content {
+    .form-group {
       margin-bottom: 20px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      color: var(--dark);
-      transition: color 0.3s ease;
     }
 
-    .modal-note-image {
-      max-width: 100%;
-      max-height: 400px;
-      border-radius: 8px;
-      margin: 10px 0;
-    }
-
-    .modal-note-meta {
-      color: var(--gray-600);
-      font-size: 0.9rem;
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid var(--gray-200);
-      transition: color 0.3s ease, border-color 0.3s ease;
-    }
-
-    .dark-mode .modal-note-meta {
-      border-color: var(--gray-300);
-    }
-
-    .modal-actions {
-      padding: 20px;
-      border-top: 1px solid var(--gray-200);
+    .auth-btn-group {
       display: flex;
       gap: 12px;
-      flex-wrap: wrap;
-      transition: border-color 0.3s ease;
+      margin-top: 20px;
     }
 
-    .dark-mode .modal-actions {
-      border-color: var(--gray-300);
-    }
-
-    /* Edit mode styles */
-    .edit-mode {
-      border-left-color: var(--warning) !important;
-      background: #fffbeb;
-    }
-
-    .dark-mode .edit-mode {
-      background: rgba(245, 158, 11, 0.1);
-    }
-
-    .edit-mode .note-actions {
-      opacity: 1 !important;
-    }
-
-    .save-cancel-group {
+    .user-info {
       display: flex;
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    .save-btn {
-      background: var(--secondary);
-      color: white;
-      border: none;
+      align-items: center;
+      gap: 12px;
+      position: absolute;
+      top: 20px;
+      right: 80px;
+      background: var(--gray-100);
       padding: 8px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
+      border-radius: 20px;
+      transition: background 0.3s ease;
     }
 
-    .cancel-btn {
+    .dark-mode .user-info {
       background: var(--gray-300);
-      color: var(--dark);
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
     }
 
-    .dark-mode .cancel-btn {
-      color: var(--light);
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
     }
 
     /* Dark mode toggle */
@@ -706,11 +672,57 @@
       color: var(--light);
     }
 
-    /* Loading indicator */
     .loading {
       text-align: center;
       padding: 40px;
       color: var(--gray-600);
+    }
+
+    /* Import/Export section */
+    .import-export-section {
+      margin-top: 20px;
+      padding: 20px;
+      background: var(--gray-100);
+      border-radius: var(--radius);
+      transition: background 0.3s ease;
+    }
+
+    .dark-mode .import-export-section {
+      background: var(--gray-300);
+    }
+
+    .import-export-section h3 {
+      margin-bottom: 15px;
+      color: var(--dark);
+      transition: color 0.3s ease;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-label {
+      display: inline-block;
+      padding: 10px 20px;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .file-label:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Firebase config warning */
+    .config-warning {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
     }
   </style>
 </head>
@@ -719,6 +731,15 @@
   <button class="theme-toggle" id="themeToggle">
     <i class="fas fa-moon"></i>
   </button>
+
+  <!-- User info (will be populated after login) -->
+  <div class="user-info" id="userInfo" style="display: none;">
+    <div class="user-avatar" id="userAvatar">U</div>
+    <span id="userEmail">user@example.com</span>
+    <button class="btn btn-secondary" onclick="logout()" style="padding: 4px 12px; font-size: 0.8rem;">
+      <i class="fas fa-sign-out-alt"></i> Keluar
+    </button>
+  </div>
 
   <div class="container">
     <header>
@@ -729,77 +750,177 @@
       <p class="subtitle">catat dan lupakan</p>
     </header>
 
-    <div class="main-content">
-      <div class="input-section">
-        <div class="input-group">
-          <label for="noteText"><i class="fas fa-edit"></i> Isi Catatan</label>
-          <textarea id="noteText" placeholder="Tulis catatan Anda di sini..."></textarea>
-        </div>
+    <!-- Firebase Config Warning -->
+    <div id="configWarning" class="config-warning" style="display: none;">
+      <strong>⚠️ Konfigurasi Firebase Diperlukan!</strong><br>
+      Untuk menggunakan fitur login dan penyimpanan cloud, Anda perlu mengkonfigurasi Firebase.<br>
+      <a href="https://console.firebase.google.com/" target="_blank" style="color: #856404; text-decoration: underline;">
+        Buat project Firebase
+      </a> dan tambahkan konfigurasi Anda di bagian atas kode.
+    </div>
 
-        <div class="input-group">
-          <label><i class="fas fa-image"></i> Lampirkan Gambar</label>
-          <div class="drop-area" id="dropArea">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <p><strong>Drag & drop</strong> gambar di sini</p>
-            <p>atau</p>
-            <p><strong>Klik untuk memilih file</strong> atau <strong>Ctrl+V</strong> untuk paste screenshot</p>
-            <p class="paste-instructions">Format: JPG, PNG, GIF (Max 5MB)</p>
+    <!-- Auth Modals -->
+    <div class="modal" id="loginModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Login</h2>
+          <button class="close-modal" onclick="closeModal('loginModal')">&times;</button>
+        </div>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" required placeholder="Masukkan email Anda">
           </div>
-          <div class="preview-container">
-            <img id="imagePreview" class="preview-img" alt="Preview gambar">
-            <button id="removeImageBtn" class="remove-image-btn" onclick="removeImage()">
-              <i class="fas fa-times"></i>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required placeholder="Masukkan password">
+          </div>
+          <div class="auth-btn-group">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="showRegisterModal()">
+              <i class="fas fa-user-plus"></i> Daftar
             </button>
           </div>
-        </div>
-
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="addNote()">
-            <i class="fas fa-plus"></i> Tambah Catatan
-          </button>
-          <button class="btn btn-secondary" onclick="clearInputs()">
-            <i class="fas fa-trash"></i> Bersihkan
-          </button>
-        </div>
-      </div>
-
-      <div class="notes-section">
-        <div class="section-header">
-          <h2 class="section-title">Catatan Saya</h2>
-          <div class="notes-count" id="notesCount">0 catatan</div>
-        </div>
-        <div id="notesContainer">
-          <div class="loading">Memuat catatan...</div>
-        </div>
+        </form>
       </div>
     </div>
 
-    <div class="features-grid">
-      <div class="feature-item">
-        <i class="fas fa-save"></i>
-        <h4>Simpan Otomatis</h4>
-        <p>Data tersimpan di browser Anda</p>
-      </div>
-      <div class="feature-item">
-        <i class="fas fa-file-pdf"></i>
-        <h4>Ekspor ke PDF</h4>
-        <p>Unduh catatan sebagai dokumen PDF</p>
-      </div>
-      <div class="feature-item">
-        <i class="fas fa-file-alt"></i>
-        <h4>Ekspor ke TXT</h4>
-        <p>Unduh catatan sebagai file teks</p>
-      </div>
-      <div class="feature-item">
-        <i class="fas fa-images"></i>
-        <h4>Dukungan Gambar</h4>
-        <p>Tambahkan screenshot atau foto</p>
+    <div class="modal" id="registerModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Daftar Akun</h2>
+          <button class="close-modal" onclick="closeModal('registerModal')">&times;</button>
+        </div>
+        <form id="registerForm">
+          <div class="form-group">
+            <label for="registerEmail">Email</label>
+            <input type="email" id="registerEmail" required placeholder="Masukkan email Anda">
+          </div>
+          <div class="form-group">
+            <label for="registerPassword">Password</label>
+            <input type="password" id="registerPassword" required placeholder="Buat password (min 6 karakter)">
+          </div>
+          <div class="form-group">
+            <label for="registerConfirmPassword">Konfirmasi Password</label>
+            <input type="password" id="registerConfirmPassword" required placeholder="Konfirmasi password">
+          </div>
+          <div class="auth-btn-group">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-user-plus"></i> Daftar
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="showLoginModal()">
+              <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
-    <footer>
-      <p>Note &copy; 2024 - Catatan Anda aman disimpan di browser ini</p>
-    </footer>
+    <!-- Main Content (hidden when not logged in) -->
+    <div id="mainContent" style="display: none;">
+      <div class="main-content">
+        <div class="input-section">
+          <div class="input-group">
+            <label for="noteText"><i class="fas fa-edit"></i> Isi Catatan</label>
+            <textarea id="noteText" placeholder="Tulis catatan Anda di sini..."></textarea>
+          </div>
+
+          <div class="input-group">
+            <label><i class="fas fa-image"></i> Lampirkan Gambar</label>
+            <div class="drop-area" id="dropArea">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <p><strong>Drag & drop</strong> gambar di sini</p>
+              <p>atau</p>
+              <p><strong>Klik untuk memilih file</strong> atau <strong>Ctrl+V</strong> untuk paste screenshot</p>
+              <p class="paste-instructions">Format: JPG, PNG, GIF (Max 5MB)</p>
+            </div>
+            <div class="preview-container">
+              <img id="imagePreview" class="preview-img" alt="Preview gambar">
+              <button id="removeImageBtn" class="remove-image-btn" onclick="removeImage()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="addNote()">
+              <i class="fas fa-plus"></i> Tambah Catatan
+            </button>
+            <button class="btn btn-secondary" onclick="clearInputs()">
+              <i class="fas fa-trash"></i> Bersihkan
+            </button>
+          </div>
+
+          <!-- Import/Export Section -->
+          <div class="import-export-section">
+            <h3><i class="fas fa-file-import"></i> Impor/Ekspor Catatan</h3>
+            <div class="btn-group">
+              <label class="file-label">
+                <i class="fas fa-file-import"></i> Impor File
+                <input type="file" class="file-input" id="importFile" accept=".json">
+              </label>
+              <button class="btn btn-secondary" onclick="exportNotes()">
+                <i class="fas fa-file-export"></i> Ekspor ke JSON
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="notes-section">
+          <div class="section-header">
+            <h2 class="section-title">Catatan Saya</h2>
+            <div class="notes-count" id="notesCount">0 catatan</div>
+          </div>
+          <div id="notesContainer">
+            <div class="loading">Memuat catatan...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-item">
+          <i class="fas fa-save"></i>
+          <h4>Simpan Otomatis</h4>
+          <p>Data tersimpan di cloud Anda</p>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-file-pdf"></i>
+          <h4>Ekspor ke PDF</h4>
+          <p>Unduh catatan sebagai dokumen PDF</p>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-file-alt"></i>
+          <h4>Ekspor ke TXT</h4>
+          <p>Unduh catatan sebagai file teks</p>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-images"></i>
+          <h4>Dukungan Gambar</h4>
+          <p>Tambahkan screenshot atau foto</p>
+        </div>
+      </div>
+
+      <footer>
+        <p>Note &copy; 2024 - Catatan Anda aman disimpan di cloud</p>
+      </footer>
+    </div>
+
+    <!-- Login Prompt (shown when not logged in) -->
+    <div id="loginPrompt" class="empty-state">
+      <i class="fas fa-lock"></i>
+      <h3>Silakan Login untuk Mengakses Aplikasi</h3>
+      <p>Aplikasi ini memerlukan akun untuk menyimpan catatan Anda secara aman di cloud</p>
+      <div class="auth-btn-group" style="justify-content: center; margin-top: 20px;">
+        <button class="btn btn-primary" onclick="showLoginModal()">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+        <button class="btn btn-secondary" onclick="showRegisterModal()">
+          <i class="fas fa-user-plus"></i> Daftar Akun Baru
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal for viewing full note -->
@@ -807,7 +928,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title">Detail Catatan</h2>
-        <button class="close-modal" onclick="closeModal()">&times;</button>
+        <button class="close-modal" onclick="closeModal('viewModal')">&times;</button>
       </div>
       <div class="modal-body" id="modalBody">
         <!-- Content will be populated by JavaScript -->
@@ -821,8 +942,59 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    // Load jsPDF
-    const { jsPDF } = window.jspdf;
+    // === FIREBASE CONFIGURATION ===
+    // 🔥 GANTI DENGAN KONFIGURASI FIREBASE ANDA DI SINI 🔥
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_mQzMVU_X6-sPGU24CwweBMoNpH-q7Ic",
+      authDomain: "coffee-spark-ai-barista-4db03.firebaseapp.com",
+      projectId: "coffee-spark-ai-barista-4db03",
+      storageBucket: "coffee-spark-ai-barista-4db03.firebasestorage.app",
+      messagingSenderId: "401087763627",
+      appId: "1:401087763627:web:997f83b4bd94f73a4d93ee"
+    };
+
+    // Firebase variables
+    let firebaseApp = null;
+    let auth = null;
+    let db = null;
+    let isFirebaseConfigured = false;
+
+    // Initialize Firebase with proper error handling
+    function initializeFirebase() {
+      try {
+        // Check if Firebase config is provided
+        if (!firebaseConfig || 
+            !firebaseConfig.apiKey || 
+            !firebaseConfig.authDomain || 
+            !firebaseConfig.projectId) {
+          console.warn('Firebase configuration is incomplete');
+          isFirebaseConfigured = false;
+          document.getElementById('configWarning').style.display = 'block';
+          return false;
+        }
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+          firebaseApp = firebase.initializeApp(firebaseConfig);
+        } else {
+          firebaseApp = firebase.app();
+        }
+        
+        auth = firebase.auth();
+        db = firebase.firestore();
+        isFirebaseConfigured = true;
+        document.getElementById('configWarning').style.display = 'none';
+        console.log('Firebase initialized successfully');
+        return true;
+        
+      } catch (error) {
+        console.error('Firebase initialization error:', error);
+        isFirebaseConfigured = false;
+        document.getElementById('configWarning').style.display = 'block';
+        showToast('Gagal menginisialisasi Firebase: ' + error.message, 'error');
+        return false;
+      }
+    }
 
     // DOM Elements
     const noteText = document.getElementById('noteText');
@@ -837,52 +1009,22 @@
     const modalActions = document.getElementById('modalActions');
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = themeToggle.querySelector('i');
+    const mainContent = document.getElementById('mainContent');
+    const loginPrompt = document.getElementById('loginPrompt');
+    const userInfo = document.getElementById('userInfo');
+    const userAvatar = document.getElementById('userAvatar');
+    const userEmail = document.getElementById('userEmail');
+    const importFile = document.getElementById('importFile');
+    const configWarning = document.getElementById('configWarning');
 
     let selectedImage = null;
     let editingNoteId = null;
     let currentViewNote = null;
+    let currentUser = null;
+    let notes = [];
 
-    // === PERSISTENT STORAGE IMPLEMENTATION ===
-    const STORAGE_KEY = 'notepad_pro_notes_v2';
-    const DARK_MODE_KEY = 'notepad_pro_dark_mode';
-
-    // Load data from localStorage
-    function loadFromStorage() {
-      try {
-        const savedNotes = localStorage.getItem(STORAGE_KEY);
-        const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
-        
-        // Load notes
-        if (savedNotes) {
-          return JSON.parse(savedNotes);
-        }
-        return [];
-      } catch (error) {
-        console.error('Error loading from storage:', error);
-        return [];
-      }
-    }
-
-    // Save data to localStorage
-    function saveToStorage(notesData) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(notesData));
-        updateNotesCount();
-        return true;
-      } catch (error) {
-        console.error('Error saving to storage:', error);
-        showToast('Gagal menyimpan data! Ruang penyimpanan penuh.', 'error');
-        return false;
-      }
-    }
-
-    // Save dark mode preference
-    function saveDarkModePreference(isDark) {
-      localStorage.setItem(DARK_MODE_KEY, isDark);
-    }
-
-    // === DARK MODE FUNCTIONALITY ===
-    const isDarkMode = localStorage.getItem(DARK_MODE_KEY) === 'true';
+    // === DARK MODE ===
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
     if (isDarkMode) {
       document.body.classList.add('dark-mode');
       themeIcon.classList.remove('fa-moon');
@@ -892,7 +1034,7 @@
     themeToggle.addEventListener('click', () => {
       document.body.classList.toggle('dark-mode');
       const isDark = document.body.classList.contains('dark-mode');
-      saveDarkModePreference(isDark);
+      localStorage.setItem('darkMode', isDark);
       
       if (isDark) {
         themeIcon.classList.remove('fa-moon');
@@ -903,7 +1045,27 @@
       }
     });
 
-    // === TOAST NOTIFICATION ===
+    // === AUTHENTICATION ===
+    function showLoginModal() {
+      if (!isFirebaseConfigured) {
+        showToast('Firebase belum dikonfigurasi!', 'error');
+        return;
+      }
+      document.getElementById('loginModal').style.display = 'flex';
+    }
+
+    function showRegisterModal() {
+      if (!isFirebaseConfigured) {
+        showToast('Firebase belum dikonfigurasi!', 'error');
+        return;
+      }
+      document.getElementById('registerModal').style.display = 'flex';
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
     function showToast(message, type = 'success') {
       toast.textContent = message;
       toast.className = `toast toast-${type} show`;
@@ -911,6 +1073,377 @@
         toast.classList.remove('show');
       }, 3000);
     }
+
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!isFirebaseConfigured || !auth) {
+        showToast('Firebase tidak tersedia!', 'error');
+        return;
+      }
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        showToast('Login berhasil!');
+        closeModal('loginModal');
+      } catch (error) {
+        console.error('Login error:', error);
+        let errorMessage = 'Login gagal: ';
+        if (error.code === 'auth/user-not-found') {
+          errorMessage += 'Email tidak ditemukan';
+        } else if (error.code === 'auth/wrong-password') {
+          errorMessage += 'Password salah';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage += 'Format email tidak valid';
+        } else {
+          errorMessage += error.message;
+        }
+        showToast(errorMessage, 'error');
+      }
+    });
+
+    // Register
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!isFirebaseConfigured || !auth) {
+        showToast('Firebase tidak tersedia!', 'error');
+        return;
+      }
+      
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      const confirmPassword = document.getElementById('registerConfirmPassword').value;
+      
+      if (password !== confirmPassword) {
+        showToast('Password tidak cocok!', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showToast('Password minimal 6 karakter!', 'error');
+        return;
+      }
+      
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        showToast('Registrasi berhasil!');
+        closeModal('registerModal');
+      } catch (error) {
+        console.error('Register error:', error);
+        let errorMessage = 'Registrasi gagal: ';
+        if (error.code === 'auth/email-already-in-use') {
+          errorMessage += 'Email sudah digunakan';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage += 'Format email tidak valid';
+        } else if (error.code === 'auth/operation-not-allowed') {
+          errorMessage += 'Registrasi email/password tidak diizinkan';
+        } else if (error.code === 'auth/weak-password') {
+          errorMessage += 'Password terlalu lemah (minimal 6 karakter)';
+        } else {
+          errorMessage += error.message;
+        }
+        showToast(errorMessage, 'error');
+      }
+    });
+
+    // Logout
+    async function logout() {
+      if (!isFirebaseConfigured || !auth) {
+        showToast('Firebase tidak tersedia!', 'error');
+        return;
+      }
+      
+      try {
+        await auth.signOut();
+        currentUser = null;
+        mainContent.style.display = 'none';
+        loginPrompt.style.display = 'block';
+        userInfo.style.display = 'none';
+        notes = [];
+        renderNotes();
+        showToast('Berhasil logout!');
+      } catch (error) {
+        console.error('Logout error:', error);
+        showToast('Logout gagal!', 'error');
+      }
+    }
+
+    // Auth state observer
+    function setupAuthObserver() {
+      if (!isFirebaseConfigured || !auth) return;
+      
+      auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          currentUser = user;
+          userEmail.textContent = user.email;
+          const displayName = user.email.split('@')[0];
+          userAvatar.textContent = displayName.charAt(0).toUpperCase();
+          
+          mainContent.style.display = 'block';
+          loginPrompt.style.display = 'none';
+          userInfo.style.display = 'flex';
+          
+          // Load notes from Firestore
+          await loadNotesFromFirestore();
+        } else {
+          currentUser = null;
+          mainContent.style.display = 'none';
+          loginPrompt.style.display = 'block';
+          userInfo.style.display = 'none';
+          notes = [];
+          renderNotes();
+        }
+      });
+    }
+
+    // === NOTE MANAGEMENT ===
+    async function loadNotesFromFirestore() {
+      if (!isFirebaseConfigured || !db || !currentUser) return;
+      
+      try {
+        const notesRef = db.collection('notes').where('userId', '==', currentUser.uid);
+        const snapshot = await notesRef.get();
+        notes = [];
+        
+        snapshot.forEach(doc => {
+          notes.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        renderNotes();
+      } catch (error) {
+        console.error('Error loading notes:', error);
+        showToast('Gagal memuat catatan dari cloud!', 'error');
+      }
+    }
+
+    async function saveNoteToFirestore(note) {
+      if (!isFirebaseConfigured || !db || !currentUser) {
+        throw new Error('Firebase tidak tersedia');
+      }
+      
+      try {
+        const noteData = {
+          ...note,
+          userId: currentUser.uid,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        if (note.id && note.id.startsWith('temp_')) {
+          // New note
+          const docRef = await db.collection('notes').add(noteData);
+          return docRef.id;
+        } else {
+          // Update existing note
+          await db.collection('notes').doc(note.id).update(noteData);
+          return note.id;
+        }
+      } catch (error) {
+        console.error('Error saving note:', error);
+        throw error;
+      }
+    }
+
+    async function deleteNoteFromFirestore(noteId) {
+      if (!isFirebaseConfigured || !db || !currentUser) {
+        throw new Error('Firebase tidak tersedia');
+      }
+      
+      try {
+        await db.collection('notes').doc(noteId).delete();
+      } catch (error) {
+        console.error('Error deleting note:', error);
+        throw error;
+      }
+    }
+
+    async function addNote() {
+      if (!currentUser) {
+        showToast('Silakan login terlebih dahulu!', 'error');
+        return;
+      }
+      
+      const text = noteText.value.trim();
+      if (!text && !selectedImage) {
+        showToast('Masukkan teks atau gambar terlebih dahulu!', 'error');
+        return;
+      }
+
+      const createdAt = new Date().toLocaleString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      const note = {
+        id: 'temp_' + Date.now(), // Temporary ID
+        text: text,
+        image: selectedImage ? URL.createObjectURL(selectedImage) : null,
+        createdAt: createdAt,
+        originalImage: selectedImage
+      };
+
+      try {
+        // Save to Firestore first
+        const savedId = await saveNoteToFirestore(note);
+        note.id = savedId;
+        notes.push(note);
+        renderNotes();
+        clearInputs();
+        showToast('Catatan berhasil ditambahkan ke cloud!');
+      } catch (error) {
+        console.error('Failed to add note:', error);
+        showToast('Gagal menyimpan catatan ke cloud!', 'error');
+      }
+    }
+
+    async function deleteNote(id) {
+      if (!currentUser) return;
+      
+      if (confirm('Apakah Anda yakin ingin menghapus catatan ini?')) {
+        try {
+          await deleteNoteFromFirestore(id);
+          notes = notes.filter(note => note.id !== id);
+          renderNotes();
+          showToast('Catatan berhasil dihapus dari cloud!');
+        } catch (error) {
+          console.error('Failed to delete note:', error);
+          showToast('Gagal menghapus catatan dari cloud!', 'error');
+        }
+      }
+    }
+
+    async function saveEditedNote() {
+      if (!currentUser) {
+        showToast('Silakan login terlebih dahulu!', 'error');
+        return;
+      }
+      
+      const text = noteText.value.trim();
+      if (!text && !selectedImage) {
+        showToast('Masukkan teks atau gambar terlebih dahulu!', 'error');
+        return;
+      }
+
+      const noteIndex = notes.findIndex(n => n.id === editingNoteId);
+      if (noteIndex === -1) return;
+
+      const updatedAt = new Date().toLocaleString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      const updatedNote = {
+        ...notes[noteIndex],
+        text: text,
+        image: selectedImage ? URL.createObjectURL(selectedImage) : null,
+        originalImage: selectedImage,
+        createdAt: `${notes[noteIndex].createdAt} (diedit: ${updatedAt})`
+      };
+
+      try {
+        await saveNoteToFirestore(updatedNote);
+        notes[noteIndex] = updatedNote;
+        editingNoteId = null;
+        renderNotes();
+        clearInputs();
+        
+        const addButton = document.querySelector('.btn-primary');
+        addButton.innerHTML = '<i class="fas fa-plus"></i> Tambah Catatan';
+        addButton.onclick = addNote;
+        
+        showToast('Catatan berhasil diperbarui di cloud!');
+      } catch (error) {
+        console.error('Failed to update note:', error);
+        showToast('Gagal memperbarui catatan di cloud!', 'error');
+      }
+    }
+
+    // === IMPORT/EXPORT ===
+    function exportNotes() {
+      if (notes.length === 0) {
+        showToast('Tidak ada catatan untuk diekspor!', 'error');
+        return;
+      }
+      
+      const exportData = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        notes: notes.map(note => ({
+          id: note.id,
+          text: note.text,
+          createdAt: note.createdAt,
+        }))
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `notepad_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Catatan berhasil diekspor!');
+    }
+
+    importFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedData = JSON.parse(event.target.result);
+          if (!importedData.notes || !Array.isArray(importedData.notes)) {
+            throw new Error('Format file tidak valid');
+          }
+          
+          // Add imported notes
+          importedData.notes.forEach(importedNote => {
+            const newNote = {
+              id: 'temp_' + Date.now() + Math.random(),
+              text: importedNote.text || '',
+              createdAt: importedNote.createdAt || new Date().toLocaleString('id-ID'),
+              image: null,
+              originalImage: null
+            };
+            notes.push(newNote);
+          });
+          
+          // Save to Firestore
+          const savePromises = notes.map(async (note) => {
+            try {
+              const savedId = await saveNoteToFirestore(note);
+              note.id = savedId;
+            } catch (error) {
+              console.error('Failed to import note:', error);
+            }
+          });
+          
+          Promise.all(savePromises).then(() => {
+            renderNotes();
+            showToast(`Berhasil mengimpor ${importedData.notes.length} catatan!`);
+          });
+        } catch (error) {
+          console.error('Import error:', error);
+          showToast('Gagal mengimpor file: Format tidak valid', 'error');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = ''; // Reset file input
+    });
 
     // === IMAGE HANDLING ===
     document.addEventListener('paste', function(e) {
@@ -1015,52 +1548,108 @@
       removeImageBtn.style.display = 'none';
     }
 
-    // === NOTE MANAGEMENT ===
-    let notes = loadFromStorage();
-
-    function updateNotesCount() {
+    // === UI FUNCTIONS ===
+    function renderNotes() {
+      notesContainer.innerHTML = '';
       notesCount.textContent = `${notes.length} ${notes.length === 1 ? 'catatan' : 'catatan'}`;
-    }
-
-    function addNote() {
-      const text = noteText.value.trim();
-      if (!text && !selectedImage) {
-        showToast('Masukkan teks atau gambar terlebih dahulu!', 'error');
+      
+      if (notes.length === 0) {
+        notesContainer.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h3>Belum ada catatan</h3>
+            <p>Buat catatan pertama Anda menggunakan form di sebelah kiri!</p>
+          </div>
+        `;
         return;
       }
 
-      const createdAt = new Date().toLocaleString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      notes.slice().reverse().forEach(note => {
+        const div = document.createElement('div');
+        div.className = 'note-card';
+        if (editingNoteId === note.id) {
+          div.classList.add('edit-mode');
+        }
+        
+        div.innerHTML = `
+          ${note.text ? `<div class="note-content">${note.text.length > 100 ? note.text.substring(0, 100) + '...' : note.text}</div>` : ''}
+          ${note.image ? `<img src="${note.image}" alt="Gambar catatan" class="note-image" style="display: block;">` : ''}
+          <div class="note-meta">
+            <span><i class="fas fa-clock"></i> ${note.createdAt.split(' ')[0]}</span>
+            <span><i class="fas fa-hashtag"></i> ID: ${note.id.toString().slice(-4)}</span>
+          </div>
+          <div class="note-actions">
+            <button class="action-btn btn-edit" data-id="${note.id}">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="action-btn btn-txt" data-id="${note.id}">
+              <i class="fas fa-file-alt"></i> TXT
+            </button>
+            <button class="action-btn btn-pdf" data-id="${note.id}">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="action-btn btn-delete" data-id="${note.id}">
+              <i class="fas fa-trash"></i> Hapus
+            </button>
+          </div>
+        `;
+        
+        div.addEventListener('click', (e) => {
+          if (!e.target.closest('.action-btn') && editingNoteId !== note.id) {
+            viewNote(note);
+          }
+        });
+        
+        notesContainer.appendChild(div);
+        
+        if (editingNoteId !== note.id) {
+          const editBtn = div.querySelector('.btn-edit');
+          const txtBtn = div.querySelector('.btn-txt');
+          const pdfBtn = div.querySelector('.btn-pdf');
+          const deleteBtn = div.querySelector('.btn-delete');
+          
+          if (editBtn) editBtn.addEventListener('click', (e) => { e.stopPropagation(); editNote(note.id); });
+          if (txtBtn) txtBtn.addEventListener('click', (e) => { e.stopPropagation(); downloadAsTXT(note.id); });
+          if (pdfBtn) pdfBtn.addEventListener('click', (e) => { e.stopPropagation(); downloadAsPDF(note.id); });
+          if (deleteBtn) deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteNote(note.id); });
+        }
       });
-
-      const note = {
-        id: Date.now(),
-        text: text,
-        image: selectedImage ? URL.createObjectURL(selectedImage) : null,
-        createdAt: createdAt,
-        originalImage: selectedImage
-      };
-
-      notes.push(note);
-      if (saveToStorage(notes)) {
-        renderNotes();
-        clearInputs();
-        showToast('Catatan berhasil ditambahkan!');
-      }
     }
 
-    function deleteNote(id) {
-      if (confirm('Apakah Anda yakin ingin menghapus catatan ini?')) {
-        notes = notes.filter(note => note.id !== id);
-        if (saveToStorage(notes)) {
-          renderNotes();
-          showToast('Catatan berhasil dihapus!');
-        }
-      }
+    function clearInputs() {
+      noteText.value = '';
+      selectedImage = null;
+      imagePreview.style.display = 'none';
+      removeImageBtn.style.display = 'none';
+    }
+
+    function viewNote(note) {
+      currentViewNote = note;
+      modalBody.innerHTML = `
+        <div class="modal-note-content">${note.text || ''}</div>
+        ${note.image ? `<img src="${note.image}" alt="Gambar catatan" class="modal-note-image">` : ''}
+        <div class="modal-note-meta">
+          <p><strong>Dibuat:</strong> ${note.createdAt}</p>
+          <p><strong>ID:</strong> ${note.id}</p>
+        </div>
+      `;
+      
+      modalActions.innerHTML = `
+        <button class="action-btn btn-edit" onclick="editNoteFromModal('${note.id}')">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+        <button class="action-btn btn-txt" onclick="downloadAsTXT('${note.id}')">
+          <i class="fas fa-file-alt"></i> TXT
+        </button>
+        <button class="action-btn btn-pdf" onclick="downloadAsPDF('${note.id}')">
+          <i class="fas fa-file-pdf"></i> PDF
+        </button>
+        <button class="action-btn btn-delete" onclick="deleteNoteFromModal('${note.id}')">
+          <i class="fas fa-trash"></i> Hapus
+        </button>
+      `;
+      
+      viewModal.style.display = 'flex';
     }
 
     function editNote(id) {
@@ -1089,107 +1678,27 @@
       showToast('Mode edit aktif. Ubah catatan lalu klik "Simpan Perubahan"');
     }
 
-    function saveEditedNote() {
-      const text = noteText.value.trim();
-      if (!text && !selectedImage) {
-        showToast('Masukkan teks atau gambar terlebih dahulu!', 'error');
-        return;
-      }
-
-      const noteIndex = notes.findIndex(n => n.id === editingNoteId);
-      if (noteIndex === -1) return;
-
-      const updatedAt = new Date().toLocaleString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      notes[noteIndex] = {
-        ...notes[noteIndex],
-        text: text,
-        image: selectedImage ? URL.createObjectURL(selectedImage) : null,
-        originalImage: selectedImage,
-        createdAt: `${notes[noteIndex].createdAt} (diedit: ${updatedAt})`
-      };
-
-      if (saveToStorage(notes)) {
-        editingNoteId = null;
-        renderNotes();
-        clearInputs();
-        
-        const addButton = document.querySelector('.btn-primary');
-        addButton.innerHTML = '<i class="fas fa-plus"></i> Tambah Catatan';
-        addButton.onclick = addNote;
-        
-        showToast('Catatan berhasil diperbarui!');
-      }
-    }
-
-    function cancelEdit() {
-      editingNoteId = null;
-      clearInputs();
-      
-      const addButton = document.querySelector('.btn-primary');
-      addButton.innerHTML = '<i class="fas fa-plus"></i> Tambah Catatan';
-      addButton.onclick = addNote;
-      
-      showToast('Edit dibatalkan');
-    }
-
-    function viewNote(note) {
-      currentViewNote = note;
-      modalBody.innerHTML = `
-        <div class="modal-note-content">${note.text || ''}</div>
-        ${note.image ? `<img src="${note.image}" alt="Gambar catatan" class="modal-note-image">` : ''}
-        <div class="modal-note-meta">
-          <p><strong>Dibuat:</strong> ${note.createdAt}</p>
-          <p><strong>ID:</strong> ${note.id}</p>
-        </div>
-      `;
-      
-      modalActions.innerHTML = `
-        <button class="action-btn btn-edit" onclick="editNoteFromModal(${note.id})">
-          <i class="fas fa-edit"></i> Edit
-        </button>
-        <button class="action-btn btn-txt" onclick="downloadAsTXT(${note.id})">
-          <i class="fas fa-file-alt"></i> TXT
-        </button>
-        <button class="action-btn btn-pdf" onclick="downloadAsPDF(${note.id})">
-          <i class="fas fa-file-pdf"></i> PDF
-        </button>
-        <button class="action-btn btn-delete" onclick="deleteNoteFromModal(${note.id})">
-          <i class="fas fa-trash"></i> Hapus
-        </button>
-      `;
-      
-      viewModal.style.display = 'flex';
-    }
-
     function editNoteFromModal(id) {
-      closeModal();
+      closeModal('viewModal');
       editNote(id);
     }
 
     function deleteNoteFromModal(id) {
-      closeModal();
+      closeModal('viewModal');
       deleteNote(id);
     }
 
-    function closeModal() {
-      viewModal.style.display = 'none';
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
       currentViewNote = null;
     }
 
     viewModal.addEventListener('click', (e) => {
       if (e.target === viewModal) {
-        closeModal();
+        closeModal('viewModal');
       }
     });
 
-    // === DOWNLOAD FUNCTIONS ===
     function downloadAsTXT(noteId) {
       const note = notes.find(n => n.id === noteId);
       if (!note) return;
@@ -1216,6 +1725,7 @@
       const note = notes.find(n => n.id === noteId);
       if (!note) return;
       
+      const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       let y = 20;
 
@@ -1300,99 +1810,72 @@
       }
     }
 
-    // === RENDER NOTES ===
-    function renderNotes() {
-      notesContainer.innerHTML = '';
-      updateNotesCount();
-      
-      if (notes.length === 0) {
-        notesContainer.innerHTML = `
-          <div class="empty-state">
-            <i class="fas fa-inbox"></i>
-            <h3>Belum ada catatan</h3>
-            <p>Buat catatan pertama Anda menggunakan form di sebelah kiri!</p>
-          </div>
-        `;
-        return;
-      }
-
-      notes.slice().reverse().forEach(note => {
-        const div = document.createElement('div');
-        div.className = 'note-card';
-        if (editingNoteId === note.id) {
-          div.classList.add('edit-mode');
-        }
-        
-        div.innerHTML = `
-          ${note.text ? `<div class="note-content">${note.text.length > 100 ? note.text.substring(0, 100) + '...' : note.text}</div>` : ''}
-          ${note.image ? `<img src="${note.image}" alt="Gambar catatan" class="note-image" style="display: block;">` : ''}
-          <div class="note-meta">
-            <span><i class="fas fa-clock"></i> ${note.createdAt.split(' ')[0]}</span>
-            <span><i class="fas fa-hashtag"></i> ID: ${note.id.toString().slice(-4)}</span>
-          </div>
-          <div class="note-actions">
-            <button class="action-btn btn-edit" data-id="${note.id}">
-              <i class="fas fa-edit"></i> Edit
-            </button>
-            <button class="action-btn btn-txt" data-id="${note.id}">
-              <i class="fas fa-file-alt"></i> TXT
-            </button>
-            <button class="action-btn btn-pdf" data-id="${note.id}">
-              <i class="fas fa-file-pdf"></i> PDF
-            </button>
-            <button class="action-btn btn-delete" data-id="${note.id}">
-              <i class="fas fa-trash"></i> Hapus
-            </button>
-          </div>
-          ${editingNoteId === note.id ? `
-            <div class="save-cancel-group">
-              <button class="save-btn" onclick="saveEditedNote()">Simpan Perubahan</button>
-              <button class="cancel-btn" onclick="cancelEdit()">Batal</button>
-            </div>
-          ` : ''}
-        `;
-        
-        div.addEventListener('click', (e) => {
-          if (!e.target.closest('.action-btn') && editingNoteId !== note.id) {
-            viewNote(note);
-          }
-        });
-        
-        notesContainer.appendChild(div);
-        
-        if (editingNoteId !== note.id) {
-          const editBtn = div.querySelector('.btn-edit');
-          const txtBtn = div.querySelector('.btn-txt');
-          const pdfBtn = div.querySelector('.btn-pdf');
-          const deleteBtn = div.querySelector('.btn-delete');
-          
-          if (editBtn) editBtn.addEventListener('click', (e) => { e.stopPropagation(); editNote(note.id); });
-          if (txtBtn) txtBtn.addEventListener('click', (e) => { e.stopPropagation(); downloadAsTXT(note.id); });
-          if (pdfBtn) pdfBtn.addEventListener('click', (e) => { e.stopPropagation(); downloadAsPDF(note.id); });
-          if (deleteBtn) deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteNote(note.id); });
+    // Close modals when clicking outside
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.display = 'none';
         }
       });
-    }
-
-    function clearInputs() {
-      noteText.value = '';
-      selectedImage = null;
-      imagePreview.style.display = 'none';
-      removeImageBtn.style.display = 'none';
-      
-      if (editingNoteId) {
-        cancelEdit();
-      }
-    }
-
-    // Auto-save on page unload
-    window.addEventListener('beforeunload', () => {
-      saveToStorage(notes);
     });
 
+    // === INITIALIZE APP ===
+    // Initialize Firebase first
+    const firebaseInitialized = initializeFirebase();
+    
+    // Setup auth observer if Firebase is available
+    if (firebaseInitialized) {
+      setupAuthObserver();
+    }
+    
     // Initial render
     renderNotes();
   </script>
 </body>
 </html>
 
+
+    
+              <script>
+                              function initializeFirebase() {
+  try {
+    // Cek konfigurasi terlebih dahulu
+    if (!firebaseConfig.apiKey || !firebaseConfig.authDomain) {
+      throw new Error('Konfigurasi Firebase tidak lengkap');
+    }
+    
+    // Inisialisasi Firebase
+    if (!firebase.apps.length) {
+      firebaseApp = firebase.initializeApp(firebaseConfig);
+    }
+    
+    auth = firebase.auth();
+    db = firebase.firestore();
+    return true;
+    
+  } catch (error) {
+    console.error('Firebase initialization error:', error);
+    return false;
+  }
+}
+
+// Sebelum login/registrasi
+if (!isFirebaseConfigured || !auth) {
+  showToast('Firebase tidak tersedia!', 'error');
+  return;
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBcXXXXXXXXXXXXXXXXXX",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456789"
+};
+
+
+              </script>
+                        </body>
+                        </html>
+                    
