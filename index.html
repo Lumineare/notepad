@@ -705,13 +705,6 @@
     .dark-mode .theme-toggle i {
       color: var(--light);
     }
-
-    /* Loading indicator */
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: var(--gray-600);
-    }
   </style>
 </head>
 <body>
@@ -768,9 +761,7 @@
           <h2 class="section-title">Catatan Saya</h2>
           <div class="notes-count" id="notesCount">0 catatan</div>
         </div>
-        <div id="notesContainer">
-          <div class="loading">Memuat catatan...</div>
-        </div>
+        <div id="notesContainer"></div>
       </div>
     </div>
 
@@ -778,7 +769,7 @@
       <div class="feature-item">
         <i class="fas fa-save"></i>
         <h4>Simpan Otomatis</h4>
-        <p>Data tersimpan di browser Anda</p>
+        <p>Data tersimpan saat Anda keluar</p>
       </div>
       <div class="feature-item">
         <i class="fas fa-file-pdf"></i>
@@ -842,47 +833,8 @@
     let editingNoteId = null;
     let currentViewNote = null;
 
-    // === PERSISTENT STORAGE IMPLEMENTATION ===
-    const STORAGE_KEY = 'notepad_pro_notes_v2';
-    const DARK_MODE_KEY = 'notepad_pro_dark_mode';
-
-    // Load data from localStorage
-    function loadFromStorage() {
-      try {
-        const savedNotes = localStorage.getItem(STORAGE_KEY);
-        const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
-        
-        // Load notes
-        if (savedNotes) {
-          return JSON.parse(savedNotes);
-        }
-        return [];
-      } catch (error) {
-        console.error('Error loading from storage:', error);
-        return [];
-      }
-    }
-
-    // Save data to localStorage
-    function saveToStorage(notesData) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(notesData));
-        updateNotesCount();
-        return true;
-      } catch (error) {
-        console.error('Error saving to storage:', error);
-        showToast('Gagal menyimpan data! Ruang penyimpanan penuh.', 'error');
-        return false;
-      }
-    }
-
-    // Save dark mode preference
-    function saveDarkModePreference(isDark) {
-      localStorage.setItem(DARK_MODE_KEY, isDark);
-    }
-
-    // === DARK MODE FUNCTIONALITY ===
-    const isDarkMode = localStorage.getItem(DARK_MODE_KEY) === 'true';
+    // Dark mode functionality
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
     if (isDarkMode) {
       document.body.classList.add('dark-mode');
       themeIcon.classList.remove('fa-moon');
@@ -892,7 +844,7 @@
     themeToggle.addEventListener('click', () => {
       document.body.classList.toggle('dark-mode');
       const isDark = document.body.classList.contains('dark-mode');
-      saveDarkModePreference(isDark);
+      localStorage.setItem('darkMode', isDark);
       
       if (isDark) {
         themeIcon.classList.remove('fa-moon');
@@ -903,7 +855,7 @@
       }
     });
 
-    // === TOAST NOTIFICATION ===
+    // Toast notification function
     function showToast(message, type = 'success') {
       toast.textContent = message;
       toast.className = `toast toast-${type} show`;
@@ -912,7 +864,7 @@
       }, 3000);
     }
 
-    // === IMAGE HANDLING ===
+    // Handle paste event for screenshots
     document.addEventListener('paste', function(e) {
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -920,7 +872,7 @@
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const blob = items[i].getAsFile();
-          if (blob && blob.size <= 5 * 1024 * 1024) {
+          if (blob && blob.size <= 5 * 1024 * 1024) { // 5MB limit
             handlePastedImage(blob);
             e.preventDefault();
             break;
@@ -1015,8 +967,13 @@
       removeImageBtn.style.display = 'none';
     }
 
-    // === NOTE MANAGEMENT ===
-    let notes = loadFromStorage();
+    // Load notes from localStorage on start
+    let notes = JSON.parse(localStorage.getItem('notes')) || [];
+
+    function saveNotes() {
+      localStorage.setItem('notes', JSON.stringify(notes));
+      updateNotesCount();
+    }
 
     function updateNotesCount() {
       notesCount.textContent = `${notes.length} ${notes.length === 1 ? 'catatan' : 'catatan'}`;
@@ -1042,24 +999,22 @@
         text: text,
         image: selectedImage ? URL.createObjectURL(selectedImage) : null,
         createdAt: createdAt,
-        originalImage: selectedImage
+        originalImage: selectedImage // Keep reference to original file
       };
 
       notes.push(note);
-      if (saveToStorage(notes)) {
-        renderNotes();
-        clearInputs();
-        showToast('Catatan berhasil ditambahkan!');
-      }
+      saveNotes();
+      renderNotes();
+      clearInputs();
+      showToast('Catatan berhasil ditambahkan!');
     }
 
     function deleteNote(id) {
       if (confirm('Apakah Anda yakin ingin menghapus catatan ini?')) {
         notes = notes.filter(note => note.id !== id);
-        if (saveToStorage(notes)) {
-          renderNotes();
-          showToast('Catatan berhasil dihapus!');
-        }
+        saveNotes();
+        renderNotes();
+        showToast('Catatan berhasil dihapus!');
       }
     }
 
@@ -1080,8 +1035,10 @@
         removeImageBtn.style.display = 'none';
       }
       
+      // Scroll to top to show the form
       document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
       
+      // Change button text temporarily
       const addButton = document.querySelector('.btn-primary');
       addButton.innerHTML = '<i class="fas fa-save"></i> Simpan Perubahan';
       addButton.onclick = saveEditedNote;
@@ -1115,23 +1072,24 @@
         createdAt: `${notes[noteIndex].createdAt} (diedit: ${updatedAt})`
       };
 
-      if (saveToStorage(notes)) {
-        editingNoteId = null;
-        renderNotes();
-        clearInputs();
-        
-        const addButton = document.querySelector('.btn-primary');
-        addButton.innerHTML = '<i class="fas fa-plus"></i> Tambah Catatan';
-        addButton.onclick = addNote;
-        
-        showToast('Catatan berhasil diperbarui!');
-      }
+      editingNoteId = null;
+      saveNotes();
+      renderNotes();
+      clearInputs();
+      
+      // Restore add button
+      const addButton = document.querySelector('.btn-primary');
+      addButton.innerHTML = '<i class="fas fa-plus"></i> Tambah Catatan';
+      addButton.onclick = addNote;
+      
+      showToast('Catatan berhasil diperbarui!');
     }
 
     function cancelEdit() {
       editingNoteId = null;
       clearInputs();
       
+      // Restore add button
       const addButton = document.querySelector('.btn-primary');
       addButton.innerHTML = '<i class="fas fa-plus"></i> Tambah Catatan';
       addButton.onclick = addNote;
@@ -1183,13 +1141,13 @@
       currentViewNote = null;
     }
 
+    // Close modal when clicking outside
     viewModal.addEventListener('click', (e) => {
       if (e.target === viewModal) {
         closeModal();
       }
     });
 
-    // === DOWNLOAD FUNCTIONS ===
     function downloadAsTXT(noteId) {
       const note = notes.find(n => n.id === noteId);
       if (!note) return;
@@ -1219,6 +1177,7 @@
       const doc = new jsPDF();
       let y = 20;
 
+      // Add title
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(99, 102, 241);
@@ -1230,15 +1189,18 @@
       doc.text('Catatan Pribadi', 15, y);
       y += 15;
 
+      // Add creation date
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
       doc.text(`Dibuat: ${note.createdAt}`, 15, y);
       y += 12;
 
+      // Add horizontal line
       doc.setDrawColor(200, 200, 200);
       doc.line(15, y, 195, y);
       y += 15;
 
+      // Add text content
       if (note.text) {
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
@@ -1247,6 +1209,7 @@
         y += (textLines.length * 7) + 15;
       }
 
+      // Add image if exists
       if (note.image) {
         const img = new Image();
         img.src = note.image;
@@ -1257,6 +1220,7 @@
           let imgWidth = img.width;
           let imgHeight = img.height;
           
+          // Scale image to fit
           if (imgWidth > maxWidth) {
             const ratio = maxWidth / imgWidth;
             imgWidth = maxWidth;
@@ -1268,6 +1232,7 @@
             imgWidth = imgWidth * ratio;
           }
           
+          // Check if image fits on current page
           if (y + imgHeight > 280) {
             doc.addPage();
             y = 20;
@@ -1276,6 +1241,7 @@
           doc.addImage(img, 'JPEG', 15, y, imgWidth, imgHeight);
           y += imgHeight + 15;
           
+          // Add footer
           doc.setFontSize(8);
           doc.setTextColor(150, 150, 150);
           doc.text('Dibuat dengan Note', 15, 285);
@@ -1285,6 +1251,7 @@
         };
         
         img.onerror = function() {
+          // If image fails to load, just save the PDF with text
           doc.setFontSize(8);
           doc.setTextColor(150, 150, 150);
           doc.text('Dibuat dengan Note', 15, 285);
@@ -1300,7 +1267,6 @@
       }
     }
 
-    // === RENDER NOTES ===
     function renderNotes() {
       notesContainer.innerHTML = '';
       updateNotesCount();
@@ -1352,6 +1318,7 @@
           ` : ''}
         `;
         
+        // Make the entire card clickable to view full note
         div.addEventListener('click', (e) => {
           if (!e.target.closest('.action-btn') && editingNoteId !== note.id) {
             viewNote(note);
@@ -1360,6 +1327,7 @@
         
         notesContainer.appendChild(div);
         
+        // Add event listeners for action buttons
         if (editingNoteId !== note.id) {
           const editBtn = div.querySelector('.btn-edit');
           const txtBtn = div.querySelector('.btn-txt');
@@ -1386,9 +1354,7 @@
     }
 
     // Auto-save on page unload
-    window.addEventListener('beforeunload', () => {
-      saveToStorage(notes);
-    });
+    window.addEventListener('beforeunload', saveNotes);
 
     // Initial render
     renderNotes();
